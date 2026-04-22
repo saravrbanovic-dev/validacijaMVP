@@ -221,12 +221,15 @@ tr:nth-child(even):hover td{background:var(--pale)}
   <h1>🧾 Validacijski Intervju</h1>
   <div class="meta-inputs" id="topbar-meta">
     <input id="meta-datum" type="date" title="Datum">
-    <input id="meta-interviewer" placeholder="Ime interviewera">
+    <select id="meta-interviewer">
+      <option value="">Interviewer</option>
+      <option>Janko</option><option>Sara</option><option>Sandro</option>
+      <option>Maja</option><option>Milan</option><option>Fedor</option>
+    </select>
     <input id="meta-tvrtka" placeholder="Tvrtka / korisnik">
     <select id="meta-tip">
       <option value="">Tip korisnika</option>
-      <option>Mikro</option><option>Mali</option><option>KS</option>
-      <option>Mobile</option><option>Knjigovođa</option><option>Enterprise</option>
+      <option>Mikro</option><option>Mali</option><option>KS</option><option>Mobile</option>
     </select>
   </div>
   <div class="progress-dots" id="dots"></div>
@@ -450,21 +453,27 @@ tr:nth-child(even):hover td{background:var(--pale)}
 <div id="tab-analitika" style="display:none">
 <div id="ana-main">
 
-  <!-- Filter bar -->
-  <div class="filter-bar">
-    <label>Filtriraj:</label>
-    <select id="fil-interviewer" onchange="renderAnalytics()">
-      <option value="">Svi intervieweri</option>
-    </select>
+  <!-- Sync bar -->
+  <div class="filter-bar" style="justify-content:space-between">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label>Filtriraj:</label>
+      <select id="fil-interviewer" onchange="renderAnalytics()">
+        <option value="">Svi intervieweri</option>
+      </select>
     <select id="fil-tip" onchange="renderAnalytics()">
       <option value="">Svi tipovi</option>
-      <option>Mikro</option><option>Mali</option><option>KS</option>
-      <option>Mobile</option><option>Knjigovođa</option><option>Enterprise</option>
+      <option>Mikro</option><option>Mali</option><option>KS</option><option>Mobile</option>
     </select>
-    <select id="fil-wtp" onchange="renderAnalytics()">
-      <option value="">Svi WTP</option>
-      <option>Da</option><option>Možda</option><option>Ne</option>
-    </select>
+      <select id="fil-wtp" onchange="renderAnalytics()">
+        <option value="">Svi WTP</option>
+        <option>Da</option><option>Možda</option><option>Ne</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="sync-status" style="font-size:11px;color:var(--muted)"></span>
+      <button class="btn-export" onclick="syncFromCloud()" id="btn-sync">☁️ Sinkroniziraj</button>
+      <button class="btn-export" onclick="openConfig()" title="Postavi JSONBin API ključ">⚙️ Konfiguracija</button>
+    </div>
   </div>
 
   <!-- KPI row -->
@@ -560,20 +569,143 @@ tr:nth-child(even):hover td{background:var(--pale)}
 <!-- ── TOAST ── -->
 <div id="toast"></div>
 
+<!-- ── CONFIG MODAL ── -->
+<div id="cfg-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center" onclick="closeCfgOnOverlay(event)">
+  <div style="background:#fff;border-radius:10px;width:90%;max-width:520px;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden">
+    <div style="background:var(--navy);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+      <h2 style="font-size:15px">⚙️ Konfiguracija dijeljene pohrane</h2>
+      <button onclick="closeCfg()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">
+        Za dijeljene rezultate koristimo <strong>JSONBin.io</strong> (besplatno).<br>
+        1. Idi na <strong>jsonbin.io</strong> → registriraj se → stvori novi Bin (prazan JSON: <code style="background:#f0f0f0;padding:1px 5px;border-radius:3px">{"interviews":[]}</code>)<br>
+        2. Kopiraj <strong>Bin ID</strong> i <strong>Master API Key</strong> ovdje.<br>
+        3. Podijeli ove podatke s timom — svi koriste isti Bin.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:13px;font-weight:600">Bin ID</label>
+        <input id="cfg-bin" placeholder="npr. 64a1b2c3d4e5f6789..." style="border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:monospace">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:13px;font-weight:600">Master API Key</label>
+        <input id="cfg-key" type="password" placeholder="$2b$10$..." style="border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:monospace">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button onclick="closeCfg()" style="background:var(--gray);border:1px solid var(--border);border-radius:6px;padding:9px 16px;font-size:13px;cursor:pointer">Odustani</button>
+        <button onclick="saveCfg()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer">Spremi konfiguraciju</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════
-// STORAGE
+// STORAGE — lokalno + JSONBin dijeljeno
 // ═══════════════════════════════════════════════════
-const SK = 'vi_data_v1';
+const SK     = 'vi_data_v1';
+const SK_CFG = 'vi_cfg_v1';
+
 function loadAll()    { try { return JSON.parse(localStorage.getItem(SK)) || []; } catch { return []; } }
 function saveAll(arr) { localStorage.setItem(SK, JSON.stringify(arr)); }
+
+function loadCfg() { try { return JSON.parse(localStorage.getItem(SK_CFG)) || {}; } catch { return {}; } }
+function saveCfgLocal(cfg) { localStorage.setItem(SK_CFG, JSON.stringify(cfg)); }
 
 function showToast(msg, type='ok') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = type === 'err' ? '#DC2626' : '#059669';
+  t.style.background = type === 'err' ? '#DC2626' : type === 'info' ? '#2E75B6' : '#059669';
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function setSyncStatus(msg, color='var(--muted)') {
+  const el = document.getElementById('sync-status');
+  if (el) { el.textContent = msg; el.style.color = color; }
+}
+
+// ── Config modal ──────────────────────────────────
+function openConfig() {
+  const cfg = loadCfg();
+  document.getElementById('cfg-bin').value = cfg.binId || '';
+  document.getElementById('cfg-key').value = cfg.apiKey || '';
+  document.getElementById('cfg-overlay').style.display = 'flex';
+}
+function closeCfg() { document.getElementById('cfg-overlay').style.display = 'none'; }
+function closeCfgOnOverlay(e) { if (e.target === document.getElementById('cfg-overlay')) closeCfg(); }
+function saveCfg() {
+  const binId  = document.getElementById('cfg-bin').value.trim();
+  const apiKey = document.getElementById('cfg-key').value.trim();
+  if (!binId || !apiKey) { showToast('Upiši Bin ID i API Key.', 'err'); return; }
+  saveCfgLocal({ binId, apiKey });
+  closeCfg();
+  showToast('Konfiguracija spremljena! Testiram vezu...', 'info');
+  syncFromCloud();
+}
+
+// ── JSONBin API ───────────────────────────────────
+async function jsonbinGet() {
+  const { binId, apiKey } = loadCfg();
+  if (!binId || !apiKey) return null;
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': apiKey, 'X-Bin-Meta': 'false' }
+    });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    return Array.isArray(j.interviews) ? j.interviews : [];
+  } catch (e) { return null; }
+}
+
+async function jsonbinPut(arr) {
+  const { binId, apiKey } = loadCfg();
+  if (!binId || !apiKey) return false;
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+      body: JSON.stringify({ interviews: arr })
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
+// ── Sync: cloud → lokalno ─────────────────────────
+async function syncFromCloud() {
+  const btn = document.getElementById('btn-sync');
+  if (btn) { btn.textContent = '⏳ Sinkronizacija...'; btn.disabled = true; }
+  setSyncStatus('Sinkronizacija...', 'var(--blue)');
+
+  const cfg = loadCfg();
+  if (!cfg.binId || !cfg.apiKey) {
+    setSyncStatus('⚙️ Nije konfiguriran dijeljeni bin', '#D97706');
+    if (btn) { btn.textContent = '☁️ Sinkroniziraj'; btn.disabled = false; }
+    showToast('Postavi JSONBin konfiguraciju prvo (⚙️ Konfiguracija).', 'info');
+    return;
+  }
+
+  const cloud = await jsonbinGet();
+  if (cloud === null) {
+    setSyncStatus('❌ Greška pri spajanju', '#DC2626');
+    showToast('Greška pri spajanju na JSONBin. Provjeri API Key i Bin ID.', 'err');
+  } else {
+    // Merge: union by id
+    const local = loadAll();
+    const merged = mergeInterviews(local, cloud);
+    saveAll(merged);
+    const now = new Date().toLocaleTimeString('hr');
+    setSyncStatus(`✓ Sinkronizirano u ${now}`, '#059669');
+    showToast(`Sinkronizirano — ${merged.length} intervju(a) ukupno.`);
+    renderAnalytics();
+  }
+  if (btn) { btn.textContent = '☁️ Sinkroniziraj'; btn.disabled = false; }
+}
+
+function mergeInterviews(local, cloud) {
+  const map = {};
+  [...local, ...cloud].forEach(i => { if (i && i.id) map[i.id] = i; });
+  return Object.values(map).sort((a,b) => a.id - b.id);
 }
 
 // ═══════════════════════════════════════════════════
@@ -660,7 +792,7 @@ function switchTab(tab) {
   document.getElementById('topbar-meta').style.display    = tab==='forma'     ? '' : 'none';
   document.getElementById('dots').style.display           = tab==='forma'     ? '' : 'none';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
-  if (tab==='analitika') renderAnalytics();
+  if (tab==='analitika') { renderAnalytics(); syncFromCloud(); }
 }
 
 // ═══════════════════════════════════════════════════
@@ -710,7 +842,23 @@ function saveInterview() {
   data.push(interview);
   saveAll(data);
   updateTabCount();
-  showToast(`✓ Intervju "${tvrtka || interviewer}" spremljen!`);
+  showToast(`✓ Intervju "${tvrtka || interviewer}" spremljen lokalno — šaljem u cloud...`, 'info');
+
+  // Push merged data to cloud
+  const cfg = loadCfg();
+  if (cfg.binId && cfg.apiKey) {
+    jsonbinGet().then(cloud => {
+      const merged = mergeInterviews(data, cloud || []);
+      saveAll(merged);
+      return jsonbinPut(merged);
+    }).then(ok => {
+      updateTabCount();
+      if (ok) showToast(`✓ Intervju "${tvrtka || interviewer}" sinkroniziran s timom!`);
+      else     showToast(`Intervju spremljen lokalno, ali cloud sync nije uspio.`, 'err');
+    });
+  } else {
+    showToast(`✓ Intervju "${tvrtka || interviewer}" spremljen! (Postavi konfiguraciju za dijeljenje s timom)`);
+  }
 }
 
 function updateTabCount() {
@@ -727,8 +875,7 @@ function clearForm() {
   document.querySelectorAll('#tab-forma input[type=hidden]').forEach(el => el.value = '');
   document.querySelectorAll('#tab-forma .score-btn.selected, #tab-forma .pill-btn.selected')
     .forEach(el => el.classList.remove('selected'));
-  ['meta-interviewer','meta-tvrtka','meta-datum'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('meta-tip').value = '';
+  ['meta-interviewer','meta-tvrtka','meta-datum','meta-tip'].forEach(id => document.getElementById(id).value = '');
   updateCompletion();
 }
 
@@ -859,10 +1006,10 @@ function renderAnalytics() {
       scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{grid:{display:false}}}}});
 
   // ── Chart: By tip (doughnut)
-  const tipVals = ['Mikro','Mali','KS','Mobile','Knjigovođa','Enterprise'];
+  const tipVals = ['Mikro','Mali','KS','Mobile'];
   mkChart('ch-tip',{type:'doughnut',data:{labels:tipVals,
     datasets:[{data:tipVals.map(v=>data.filter(d=>d.tip===v).length),
-      backgroundColor:[NAVY,BLUE,PURPLE],borderWidth:2}]},
+      backgroundColor:[NAVY,BLUE,'#0891B2',PURPLE],borderWidth:2}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
       plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}});
 
