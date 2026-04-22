@@ -346,6 +346,51 @@ tr:nth-child(even):hover td{background:var(--pale)}
     <div class="section-body">
       <div class="script-box">Zamislimo utorak ujutro. Otvoriš laptop — bez maila, bez Excela — i za 30 sekundi znaš točno što trebaš naplatiti ovaj tjedan, što trebaš platiti, i vidiš li neka kašnjenja. Zvuči li ti to korisno — ili nerealno?</div>
       <div class="tip-box">Uvodi specifične značajke JEDAN PO JEDAN. Ne objašnjavaš — slušaš. Negativne reakcije su dragocjeniji signal.</div>
+
+      <div style="background:#F8F9FA;border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.7">
+        <div style="font-weight:700;color:var(--navy);margin-bottom:10px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">MVP — Značajke za validaciju</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+
+          <div>
+            <div style="font-weight:700;color:var(--blue);margin-bottom:5px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Core platforma i UX</div>
+            <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:3px">
+              <li>🔐 Unified log-in</li>
+              <li>📊 Unified dashboard</li>
+              <li>✅ Pregled obveza (task list / status)</li>
+              <li>🔔 Kontrola obavijesti i push notifikacije</li>
+              <li>📱 Mobilni pristup</li>
+              <li>🎨 Personalizacija i vizualizacija</li>
+            </ul>
+          </div>
+
+          <div>
+            <div style="font-weight:700;color:var(--blue);margin-bottom:5px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Rad s računima i dokumentima</div>
+            <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:3px">
+              <li>📤 Slanje eRačuna i ponuda</li>
+              <li>▦ 2D barkod</li>
+              <li>🔍 OCR</li>
+              <li>🗂 DMS (upravljanje dokumentima)</li>
+              <li>📦 Katalog artikala (import + AI)</li>
+              <li>🔁 Recurring računi</li>
+              <li>📋 PO / SD obrasci</li>
+            </ul>
+          </div>
+
+          <div>
+            <div style="font-weight:700;color:var(--blue);margin-bottom:5px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Integracije i AI layer</div>
+            <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:3px">
+              <li>🔌 API layer</li>
+              <li>📑 Export prema knjigovodstvu</li>
+              <li>↗️ Prosljeđivanje knjigovođi</li>
+              <li>🛠 Prijevod grešaka + auto ticketing</li>
+              <li>👁 Vizualizacija računa (AI)</li>
+              <li>📍 Tracking (logovi + pametni prijedlozi)</li>
+              <li>💡 KPD sugestija</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
       <div class="q-wrap"><div class="q-label">Zvuči li to korisno ili nerealno? Zašto?</div><textarea id="s4_q1" class="large"></textarea></div>
       <div class="q-wrap"><div class="q-label">Što ti tu najviše ima smisla?</div><textarea id="s4_q2" class="large"></textarea></div>
       <div class="q-wrap"><div class="q-label">Što ti nedostaje u ovom konceptu?</div><textarea id="s4_q3" class="large"></textarea></div>
@@ -577,12 +622,6 @@ tr:nth-child(even):hover td{background:var(--pale)}
       <button onclick="closeCfg()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer">✕</button>
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-      <p style="font-size:13px;color:var(--muted);line-height:1.6">
-        Za dijeljene rezultate koristimo <strong>JSONBin.io</strong> (besplatno).<br>
-        1. Idi na <strong>jsonbin.io</strong> → registriraj se → stvori novi Bin (prazan JSON: <code style="background:#f0f0f0;padding:1px 5px;border-radius:3px">{"interviews":[]}</code>)<br>
-        2. Kopiraj <strong>Bin ID</strong> i <strong>Master API Key</strong> ovdje.<br>
-        3. Podijeli ove podatke s timom — svi koriste isti Bin.
-      </p>
       <div style="display:flex;flex-direction:column;gap:6px">
         <label style="font-size:13px;font-weight:600">Bin ID</label>
         <input id="cfg-bin" placeholder="npr. 64a1b2c3d4e5f6789..." style="border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:monospace">
