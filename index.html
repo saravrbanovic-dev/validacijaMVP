@@ -919,22 +919,37 @@ function clearForm() {
 }
 
 // ═══════════════════════════════════════════════════
-// DELETE
+// DELETE — briše lokalno I na cloudu odmah
 // ═══════════════════════════════════════════════════
-function deleteOne(id) {
-  if (!confirm('Obrisati ovaj intervju?')) return;
-  saveAll(loadAll().filter(i => i.id !== id));
+async function deleteOne(id) {
+  if (!confirm('Obrisati ovaj intervju? Briše se i s clouda.')) return;
+  const updated = loadAll().filter(i => i.id !== id);
+  saveAll(updated);
   updateTabCount();
   renderAnalytics();
-  showToast('Intervju obrisan.', 'err');
+  showToast('Brisanje s clouda...', 'info');
+  const cfg = loadCfg();
+  if (cfg.binId && cfg.apiKey) {
+    const ok = await jsonbinPut(updated);
+    showToast(ok ? '✓ Intervju trajno obrisan (lokalno + cloud).' : '⚠️ Obrisan lokalno, cloud sync nije uspio.', ok ? 'err' : 'err');
+  } else {
+    showToast('Intervju obrisan lokalno.', 'err');
+  }
 }
 
-function deleteAll() {
-  if (!confirm('Obrisati SVE intervjue? Ova akcija se ne može poništiti.')) return;
+async function deleteAll() {
+  if (!confirm('Obrisati SVE intervjue lokalno I s clouda? Ova akcija se ne može poništiti.')) return;
   saveAll([]);
   updateTabCount();
   renderAnalytics();
-  showToast('Svi intervjui obrisani.', 'err');
+  showToast('Brisanje s clouda...', 'info');
+  const cfg = loadCfg();
+  if (cfg.binId && cfg.apiKey) {
+    const ok = await jsonbinPut([]);
+    showToast(ok ? '✓ Svi intervjui trajno obrisani (lokalno + cloud).' : '⚠️ Obrisano lokalno, cloud sync nije uspio.', ok ? 'err' : 'err');
+  } else {
+    showToast('Svi intervjui obrisani lokalno.', 'err');
+  }
 }
 
 // ═══════════════════════════════════════════════════
