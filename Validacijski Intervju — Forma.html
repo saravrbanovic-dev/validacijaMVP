@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validacijski Intervju — E-Invoicing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy:#1F4E79; --blue:#2E75B6; --purple:#7030A0;
+  --lt:#D6E4F0; --pale:#EBF3FB; --yellow:#FFFDE7;
+  --amber:#FFF9C4; --green:#E2EFDA; --gray:#F5F5F5;
+  --border:#D0D7E0; --dark:#1A1A1A; --muted:#6B7280;
+  --radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:14px;background:#EFF3F8;color:var(--dark);min-height:100vh}
+
+/* ── TOPBAR ── */
+#topbar{position:sticky;top:0;z-index:100;background:var(--navy);color:#fff;
+  padding:10px 20px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#topbar h1{font-size:15px;font-weight:700;white-space:nowrap}
+.meta-inputs{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+#topbar input,#topbar select{background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;
+  padding:5px 10px;font-size:13px;min-width:140px}
+#topbar input::placeholder{color:rgba(255,255,255,.6)}
+#topbar select option{background:var(--navy)}
+.progress-dots{display:flex;gap:6px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:background .2s}
+.dot.active{background:#fff}.dot.done{background:#6EE7B7}
+
+/* ── TAB NAV ── */
+#tabnav{background:#163d62;display:flex;padding:0 20px;gap:4px}
+.tab-btn{background:transparent;border:none;color:rgba(255,255,255,.6);
+  padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;
+  border-bottom:3px solid transparent;transition:all .15s}
+.tab-btn:hover{color:#fff}
+.tab-btn.active{color:#fff;border-bottom-color:#6EE7B7}
+.tab-count{background:rgba(255,255,255,.2);border-radius:10px;
+  padding:1px 7px;font-size:11px;margin-left:6px}
+
+/* ── MAIN ── */
+#main{max-width:860px;margin:24px auto 120px;padding:0 16px;
+  display:flex;flex-direction:column;gap:16px}
+
+/* ── SECTION CARD ── */
+.section-card{background:#fff;border-radius:var(--radius);
+  box-shadow:0 1px 4px rgba(0,0,0,.1);overflow:hidden}
+.section-head{padding:12px 18px;color:#fff;font-weight:700;font-size:13px;
+  cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.section-head .chevron{transition:transform .2s;font-size:12px}
+.section-head.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.section-body.hidden{display:none}
+
+/* ── SCRIPT / TIP BOX ── */
+.script-box{background:var(--amber);border-left:4px solid #F59E0B;
+  border-radius:5px;padding:10px 14px;font-size:13px;font-style:italic;color:#444;line-height:1.6}
+.script-box::before{content:"📝 Script — ";font-weight:700;font-style:normal}
+.tip-box{background:var(--pale);border-left:4px solid var(--blue);
+  border-radius:5px;padding:8px 14px;font-size:12px;color:var(--muted);line-height:1.5}
+.tip-box::before{content:"ℹ️  "}
+
+/* ── SUBSECTION ── */
+.subsection-label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--blue);padding:4px 0 2px;
+  border-bottom:1px solid var(--lt);margin-bottom:4px}
+
+/* ── QUESTION ── */
+.q-wrap{display:flex;flex-direction:column;gap:5px}
+.q-label{font-size:13px;font-weight:600;color:var(--dark);line-height:1.4}
+textarea,select.q-select{width:100%;border:1.5px solid var(--border);
+  border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;
+  background:var(--yellow);color:var(--dark);resize:vertical;
+  transition:border-color .15s;line-height:1.5}
+textarea:focus,select.q-select:focus{outline:none;border-color:var(--blue);background:#fff}
+textarea.small{min-height:52px}textarea.med{min-height:72px}textarea.large{min-height:100px}
+
+/* ── SCORE BUTTONS ── */
+.score-wrap{display:flex;flex-direction:column;gap:5px}
+.score-label{font-size:13px;font-weight:600;color:var(--dark)}
+.score-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.score-btn{width:40px;height:36px;border:1.5px solid var(--border);
+  border-radius:6px;background:var(--gray);cursor:pointer;font-weight:700;
+  font-size:13px;color:var(--muted);transition:all .15s;
+  display:flex;align-items:center;justify-content:center}
+.score-btn:hover{background:var(--lt);border-color:var(--blue)}
+.score-btn.selected{background:var(--navy);border-color:var(--navy);color:#fff}
+.pill-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.pill-btn{padding:7px 14px;border:1.5px solid var(--border);border-radius:20px;
+  background:var(--gray);cursor:pointer;font-size:12px;font-weight:600;
+  color:var(--muted);transition:all .15s}
+.pill-btn:hover{background:var(--lt);border-color:var(--blue)}
+.pill-btn.selected{background:var(--navy);border-color:var(--navy);color:#fff}
+.pill-btn.green.selected{background:#059669;border-color:#059669}
+.pill-btn.yellow.selected{background:#D97706;border-color:#D97706}
+.pill-btn.red.selected{background:#DC2626;border-color:#DC2626}
+
+/* ── BOTTOM BAR ── */
+#bottombar{position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-top:1px solid var(--border);padding:12px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 -2px 10px rgba(0,0,0,.08);z-index:100}
+#bottombar .completion{font-size:12px;color:var(--muted)}
+#bottombar .completion span{font-weight:700;color:var(--navy)}
+.btn-primary{background:var(--navy);color:#fff;border:none;border-radius:7px;
+  padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-primary:hover{background:#163d62}
+.btn-primary.green{background:#059669}.btn-primary.green:hover{background:#047857}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border);
+  border-radius:7px;padding:10px 14px;font-size:13px;cursor:pointer}
+
+/* ── MODAL ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:200;align-items:center;justify-content:center}
+#modal-overlay.open{display:flex}
+#modal{background:#fff;border-radius:10px;width:90%;max-width:720px;max-height:85vh;
+  display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden}
+#modal-head{background:var(--navy);color:#fff;padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between}
+#modal-head h2{font-size:15px}
+#modal-close{background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1}
+#modal-body{flex:1;overflow-y:auto;padding:0}
+#output-text{width:100%;min-height:400px;border:none;padding:16px 20px;
+  font-family:'Courier New',monospace;font-size:12px;line-height:1.7;
+  color:var(--dark);background:#FAFAFA;resize:none}
+#modal-foot{padding:12px 20px;border-top:1px solid var(--border);
+  display:flex;gap:10px;justify-content:flex-end}
+.btn-copy{background:var(--blue);color:#fff;border:none;border-radius:6px;
+  padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-copy:hover{background:#1e5f9e}.btn-copy.copied{background:#059669}
+.btn-dl{background:var(--gray);color:var(--dark);border:1px solid var(--border);
+  border-radius:6px;padding:9px 16px;font-size:13px;cursor:pointer}
+
+/* ── ANALYTICS TAB ── */
+#ana-main{max-width:1100px;margin:24px auto 40px;padding:0 16px;display:flex;flex-direction:column;gap:20px}
+
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi-card{background:#fff;border-radius:var(--radius);padding:16px 18px;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);border-top:3px solid var(--blue)}
+.kpi-card.navy{border-color:var(--navy)}.kpi-card.green{border-color:#059669}
+.kpi-card.purple{border-color:var(--purple)}.kpi-card.orange{border-color:#D97706}
+.kpi-num{font-size:28px;font-weight:800;color:var(--navy);line-height:1}
+.kpi-label{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Charts grid */
+.charts-row{display:grid;gap:16px}
+.charts-2{grid-template-columns:1fr 1fr}
+.charts-3{grid-template-columns:1fr 1fr 1fr}
+.charts-1{grid-template-columns:1fr}
+@media(max-width:640px){.charts-2,.charts-3{grid-template-columns:1fr}}
+
+.chart-card{background:#fff;border-radius:var(--radius);padding:18px;
+  box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.chart-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px}
+.chart-wrap{position:relative;height:200px}
+.chart-wrap.tall{height:260px}
+.chart-wrap.sm{height:160px}
+
+/* Analytics table */
+.ana-section{background:#fff;border-radius:var(--radius);padding:18px;
+  box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.ana-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.ana-section-head h3{font-size:14px;font-weight:700;color:var(--navy)}
+.ana-actions{display:flex;gap:8px}
+.btn-danger{background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;
+  border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-danger:hover{background:#FECACA}
+.btn-export{background:var(--pale);color:var(--blue);border:1px solid var(--lt);
+  border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-export:hover{background:var(--lt)}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;
+  white-space:nowrap;position:sticky;top:0}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;max-width:180px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:hover td{background:var(--pale)}
+tr:nth-child(even) td{background:#F9FBFD}
+tr:nth-child(even):hover td{background:var(--pale)}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-yellow{background:#FEF3C7;color:#92400E}
+.badge-red{background:#FEE2E2;color:#991B1B}
+.badge-gray{background:var(--gray);color:var(--muted)}
+
+.btn-del-row{background:transparent;border:none;color:#DC2626;cursor:pointer;
+  font-size:16px;padding:0 4px;opacity:.6}
+.btn-del-row:hover{opacity:1}
+
+/* Empty state */
+.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-state .icon{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:14px;line-height:1.6}
+
+/* Save toast */
+#toast{position:fixed;bottom:80px;right:24px;background:#059669;color:#fff;
+  padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:300;
+  transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:10px 14px;background:var(--gray);border-radius:6px;margin-bottom:12px}
+.filter-bar label{font-size:12px;font-weight:600;color:var(--muted)}
+.filter-bar select,.filter-bar input{background:#fff;border:1px solid var(--border);
+  border-radius:5px;padding:4px 8px;font-size:12px;color:var(--dark)}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div id="topbar">
+  <h1>🧾 Validacijski Intervju</h1>
+  <div class="meta-inputs" id="topbar-meta">
+    <input id="meta-datum" type="date" title="Datum">
+    <input id="meta-interviewer" placeholder="Ime interviewera">
+    <input id="meta-tvrtka" placeholder="Tvrtka / korisnik">
+    <select id="meta-tip">
+      <option value="">Tip korisnika</option>
+      <option>Mikro</option><option>Mali</option><option>KS</option>
+      <option>Mobile</option><option>Knjigovođa</option><option>Enterprise</option>
+    </select>
+  </div>
+  <div class="progress-dots" id="dots"></div>
+</div>
+
+<!-- ── TAB NAV ── -->
+<div id="tabnav">
+  <button class="tab-btn active" data-tab="forma" onclick="switchTab('forma')">
+    📝 Forma
+  </button>
+  <button class="tab-btn" data-tab="analitika" onclick="switchTab('analitika')">
+    📊 Analitika <span class="tab-count" id="tab-count">0</span>
+  </button>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- TAB: FORMA                                      -->
+<!-- ════════════════════════════════════════════════ -->
+<div id="tab-forma">
+<div id="main">
+
+  <!-- SEK 0: UVOD -->
+  <div class="section-card" data-sec="0">
+    <div class="section-head" style="background:var(--navy)" onclick="toggleSec(this)">
+      <span>0. Uvod &nbsp;(2–3 min)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="script-box">Radimo na unapređenju našeg proizvoda i želimo bolje razumjeti kako danas vodite financije i radite s računima. Ovo nije prodajni razgovor — zanima nas vaše stvarno iskustvo i način rada. Je li u redu ako snimimo razgovor samo za interne bilješke?</div>
+      <div class="q-wrap">
+        <div class="q-label">Privola za snimanje</div>
+        <div class="pill-buttons">
+          <button class="pill-btn green" onclick="togglePill(this,'privola')">Da</button>
+          <button class="pill-btn red"   onclick="togglePill(this,'privola')">Ne</button>
+        </div>
+        <input type="hidden" id="privola" value="">
+      </div>
+      <div class="q-wrap">
+        <div class="q-label">Trajanje poziva (min)</div>
+        <textarea id="trajanje" class="small" placeholder="npr. 38"></textarea>
+      </div>
+      <div class="q-wrap">
+        <div class="q-label">Pozicija / uloga sugovornika</div>
+        <textarea id="pozicija" class="small" placeholder="npr. vlasnik, CFO..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEK 1 -->
+  <div class="section-card" data-sec="1">
+    <div class="section-head" style="background:var(--blue)" onclick="toggleSec(this)">
+      <span>1. Kontekst korisnika &nbsp;(5 min)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="tip-box">Cilj: razumjeti tko je korisnik. Prefill iz CRM-a gdje je moguće.</div>
+      <div class="q-wrap"><div class="q-label">Čime se bavite / industrija?</div><textarea id="s1_q1" class="small"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koliko računa mjesečno? (ulaznih / izlaznih)</div><textarea id="s1_q2" class="small" placeholder="npr. ~30 ulaznih, ~15 izlaznih"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koliko ljudi radi u firmi?</div><textarea id="s1_q3" class="small"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koristite li neki alat za račune ili financije? Koji?</div><textarea id="s1_q4" class="med"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Tko u firmi odlučuje o kupnji softvera? (decision maker)</div><textarea id="s1_q5" class="small"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koliko okvirno godišnje trošite na računovodstvo / alate?</div><textarea id="s1_q6" class="small" placeholder="npr. ~3.000 € / god"></textarea></div>
+    </div>
+  </div>
+
+  <!-- SEK 2 -->
+  <div class="section-card" data-sec="2">
+    <div class="section-head" style="background:var(--blue)" onclick="toggleSec(this)">
+      <span>2. Trenutni Workflow &nbsp;(10–15 min) ★ NAJVAŽNIJE</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="tip-box">Pro tip: "Možeš li mi opisati <strong>zadnji put</strong> kad si to radio?" &nbsp;•&nbsp; "Koliko vam uzme tjedno?" &nbsp;•&nbsp; "Što se dogodi kad nešto prođe kroz pukotine?"</div>
+      <div class="subsection-label">Izlazni računi</div>
+      <div class="q-wrap"><div class="q-label">Kako izdaješ račune? Koji alat koristiš?</div><textarea id="s2_q1" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Kako pratiš je li nešto naplaćeno?</div><textarea id="s2_q2" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što se dogodi kad nešto "prođe kroz pukotine"?</div><textarea id="s2_q3" class="med"></textarea></div>
+      <div class="subsection-label">Ulazni računi</div>
+      <div class="q-wrap"><div class="q-label">Kako zaprimaš račune? (mail, papir, PDF, portal...)</div><textarea id="s2_q4" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Gdje ih čuvaš i kako ih organiziraš?</div><textarea id="s2_q5" class="large"></textarea></div>
+      <div class="subsection-label">Obveze i plaćanja</div>
+      <div class="q-wrap"><div class="q-label">Kako znaš što trebaš platiti i kada?</div><textarea id="s2_q6" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Imaš li sustav ili vodiš "u glavi / Excelu"?</div><textarea id="s2_q7" class="med"></textarea></div>
+      <div class="subsection-label">Komunikacija s Knjigovođom</div>
+      <div class="q-wrap"><div class="q-label">Kako komuniciraš s knjigovođom?</div><textarea id="s2_q8" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što mu šalješ i kako / koliko često?</div><textarea id="s2_q9" class="large"></textarea></div>
+    </div>
+  </div>
+
+  <!-- SEK 3 -->
+  <div class="section-card" data-sec="3">
+    <div class="section-head" style="background:var(--blue)" onclick="toggleSec(this)">
+      <span>3. Problemi i Frustracije &nbsp;(10 min)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="tip-box">Kopaj: koliko često &nbsp;•&nbsp; koliko je ozbiljan &nbsp;•&nbsp; što se dogodi ako pogriješi</div>
+      <div class="q-wrap"><div class="q-label">Što ti je najkompliciranije u ovom procesu?</div><textarea id="s3_q1" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Gdje gubiš najviše vremena?</div><textarea id="s3_q2" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što radiš ručno, a volio bi da je automatizirano?</div><textarea id="s3_q3" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što ti je najnejasnije? (porezi, obveze, statusi...)</div><textarea id="s3_q4" class="med"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Gdje najčešće griješiš ili nisi siguran?</div><textarea id="s3_q5" class="med"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Jesi li već pokušao riješiti ovaj problem? Kako?</div><textarea id="s3_q6" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Ako bi ovaj problem nestao sutra — što bi ti to značilo?</div><textarea id="s3_q7" class="large"></textarea></div>
+      <div class="score-wrap">
+        <div class="score-label">★ Zadovoljstvo procesom (1–10)</div>
+        <div class="score-buttons" id="score-zadov"></div>
+        <input type="hidden" id="zadovoljstvo" value="">
+      </div>
+    </div>
+  </div>
+
+  <!-- SEK 4 -->
+  <div class="section-card" data-sec="4">
+    <div class="section-head" style="background:var(--blue)" onclick="toggleSec(this)">
+      <span>4. Test Koncepta &nbsp;(5–7 min)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="script-box">Zamislimo utorak ujutro. Otvoriš laptop — bez maila, bez Excela — i za 30 sekundi znaš točno što trebaš naplatiti ovaj tjedan, što trebaš platiti, i vidiš li neka kašnjenja. Zvuči li ti to korisno — ili nerealno?</div>
+      <div class="tip-box">Uvodi specifične značajke JEDAN PO JEDAN. Ne objašnjavaš — slušaš. Negativne reakcije su dragocjeniji signal.</div>
+      <div class="q-wrap"><div class="q-label">Zvuči li to korisno ili nerealno? Zašto?</div><textarea id="s4_q1" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što ti tu najviše ima smisla?</div><textarea id="s4_q2" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što ti nedostaje u ovom konceptu?</div><textarea id="s4_q3" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što ti je nepotrebno?</div><textarea id="s4_q4" class="med"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Ovo bi vam riješilo što točno? (konkretan problem)</div><textarea id="s4_q5" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koliko vam ovo vrijedi u odnosu na to što sad radite?</div><textarea id="s4_q6" class="large"></textarea></div>
+    </div>
+  </div>
+
+  <!-- SEK 5 -->
+  <div class="section-card" data-sec="5">
+    <div class="section-head" style="background:var(--blue)" onclick="toggleSec(this)">
+      <span>5. Value &amp; Willingness &nbsp;(5 min)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="tip-box">Najprije pitaj o TRENUTNIM TROŠKOVIMA → pa o vrijednosti. Ne pitaj direktno "bi li platio?"</div>
+      <div class="q-wrap"><div class="q-label">Ako bi ovaj alat uštedjeo [X sati tjedno] — što bi to značilo?</div><textarea id="s5_q1" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Bi li koristio ovakav alat? Zašto?</div><textarea id="s5_q2" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Bi li bio spreman platiti? Zašto da / ne?</div><textarea id="s5_q3" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koliko okvirno? (ili u odnosu na cijenu knjigovodstva)</div><textarea id="s5_q4" class="small" placeholder="npr. 50–100 € / mj"></textarea></div>
+      <div class="score-wrap">
+        <div class="score-label">★ Korisnost koncepta (1–5)</div>
+        <div class="score-buttons" id="score-korisnost"></div>
+        <input type="hidden" id="korisnost" value="">
+      </div>
+      <div class="score-wrap">
+        <div class="score-label">★ Superhuman — Kako bi se osjećao da od sutra više ne možeš koristiti ovaj alat?</div>
+        <div class="pill-buttons">
+          <button class="pill-btn green"  onclick="togglePill(this,'superhuman')">Jako razočaran</button>
+          <button class="pill-btn yellow" onclick="togglePill(this,'superhuman')">Donekle razočaran</button>
+          <button class="pill-btn red"    onclick="togglePill(this,'superhuman')">Nije razočaran</button>
+        </div>
+        <input type="hidden" id="superhuman" value="">
+      </div>
+      <div class="score-wrap">
+        <div class="score-label">★ Spreman platiti</div>
+        <div class="pill-buttons">
+          <button class="pill-btn green"  onclick="togglePill(this,'wtp')">Da</button>
+          <button class="pill-btn yellow" onclick="togglePill(this,'wtp')">Možda</button>
+          <button class="pill-btn red"    onclick="togglePill(this,'wtp')">Ne</button>
+        </div>
+        <input type="hidden" id="wtp" value="">
+      </div>
+    </div>
+  </div>
+
+  <!-- SEK 6 -->
+  <div class="section-card" data-sec="6">
+    <div class="section-head" style="background:var(--navy)" onclick="toggleSec(this)">
+      <span>6. Closing &nbsp;(2–3 min)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="script-box">Hvala ti — ovo nam je jako korisno i pomoći će nam da napravimo bolje rješenje. Smijemo li te kontaktirati kad budemo imali prototip za testiranje?</div>
+      <div class="q-wrap"><div class="q-label">Poznajete li nekoga s istim problemom? (referral)</div><textarea id="s6_q1" class="small"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Referral kontakt (ime, tvrtka, kontakt):</div><textarea id="s6_q2" class="small"></textarea></div>
+      <div class="score-wrap">
+        <div class="score-label">★ Beta lista</div>
+        <div class="pill-buttons">
+          <button class="pill-btn green" onclick="togglePill(this,'beta')">Da</button>
+          <button class="pill-btn red"   onclick="togglePill(this,'beta')">Ne</button>
+        </div>
+        <input type="hidden" id="beta" value="">
+      </div>
+    </div>
+  </div>
+
+  <!-- VARIJACIJA KNJIGOVOĐE -->
+  <div class="section-card" data-sec="kk">
+    <div class="section-head" style="background:var(--purple)" onclick="toggleSec(this)">
+      <span>➕ Varijacija za Knjigovođe &nbsp;(ako primjenjivo)</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="tip-box">Postavi ova pitanja UMJESTO ili DODATNO uz standardne sekcije 2 i 3</div>
+      <div class="q-wrap"><div class="q-label">Kako danas dobivate dokumente od klijenata?</div><textarea id="kk_q1" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što vam je najveći problem s kvalitetom podataka?</div><textarea id="kk_q2" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što klijenti najčešće rade krivo?</div><textarea id="kk_q3" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Što bi vam olakšalo posao?</div><textarea id="kk_q4" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Koji je najmanji napor koji bi klijent uložio da bi vaš posao bio lakši?</div><textarea id="kk_q5" class="large"></textarea></div>
+      <div class="q-wrap"><div class="q-label">Kako gledate na alat koji strukturira podatke PRIJE ulaska u knjigovodstvo?</div><textarea id="kk_q6" class="large"></textarea></div>
+    </div>
+  </div>
+
+  <!-- NAPOMENE -->
+  <div class="section-card" data-sec="notes">
+    <div class="section-head" style="background:var(--navy)" onclick="toggleSec(this)">
+      <span>📝 Opće napomene, citati i dojmovi</span><span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="tip-box">Citati, neverbalke, neočekivane reakcije. Direktni citati su zlato.</div>
+      <textarea id="napomene" style="min-height:120px;width:100%" placeholder='"Svaki mjesec izgubim sat vremena samo tražeći koji račun nije plaćen..."'></textarea>
+      <div class="score-wrap">
+        <div class="score-label">Subjektivna ocjena kvalitete intervjua (1–5)</div>
+        <div class="score-buttons" id="score-kvaliteta"></div>
+        <input type="hidden" id="kvaliteta" value="">
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /tab-forma -->
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- TAB: ANALITIKA                                  -->
+<!-- ════════════════════════════════════════════════ -->
+<div id="tab-analitika" style="display:none">
+<div id="ana-main">
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <label>Filtriraj:</label>
+    <select id="fil-interviewer" onchange="renderAnalytics()">
+      <option value="">Svi intervieweri</option>
+    </select>
+    <select id="fil-tip" onchange="renderAnalytics()">
+      <option value="">Svi tipovi</option>
+      <option>Mikro</option><option>Mali</option><option>KS</option>
+      <option>Mobile</option><option>Knjigovođa</option><option>Enterprise</option>
+    </select>
+    <select id="fil-wtp" onchange="renderAnalytics()">
+      <option value="">Svi WTP</option>
+      <option>Da</option><option>Možda</option><option>Ne</option>
+    </select>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-card navy"><div class="kpi-num" id="kpi-total">0</div><div class="kpi-label">Ukupno intervjua</div></div>
+    <div class="kpi-card"><div class="kpi-num" id="kpi-zad">—</div><div class="kpi-label">Prosj. zadovoljstvo procesom</div><div class="kpi-sub">skala 1–10</div></div>
+    <div class="kpi-card"><div class="kpi-num" id="kpi-kor">—</div><div class="kpi-label">Prosj. korisnost koncepta</div><div class="kpi-sub">skala 1–5</div></div>
+    <div class="kpi-card green"><div class="kpi-num" id="kpi-wtp">—</div><div class="kpi-label">Spreman platiti (Da)</div></div>
+    <div class="kpi-card purple"><div class="kpi-num" id="kpi-super">—</div><div class="kpi-label">Jako razočaran</div><div class="kpi-sub">PMF signal → cilj &gt;40%</div></div>
+    <div class="kpi-card orange"><div class="kpi-num" id="kpi-beta">—</div><div class="kpi-label">Na beta listi</div></div>
+  </div>
+
+  <!-- Charts row 1: score distributions -->
+  <div class="charts-row charts-2">
+    <div class="chart-card">
+      <div class="chart-title">Zadovoljstvo procesom (1–10)</div>
+      <div class="chart-wrap"><canvas id="ch-zadov"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Korisnost koncepta (1–5)</div>
+      <div class="chart-wrap"><canvas id="ch-kor"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts row 2: categorical -->
+  <div class="charts-row charts-3">
+    <div class="chart-card">
+      <div class="chart-title">Superhuman score</div>
+      <div class="chart-wrap"><canvas id="ch-super"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Willingness to Pay</div>
+      <div class="chart-wrap"><canvas id="ch-wtp"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Beta lista</div>
+      <div class="chart-wrap"><canvas id="ch-beta"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts row 3: breakdowns -->
+  <div class="charts-row charts-2">
+    <div class="chart-card">
+      <div class="chart-title">Intervjui po intervieweru</div>
+      <div class="chart-wrap tall"><canvas id="ch-agent"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Intervjui po tipu korisnika</div>
+      <div class="chart-wrap tall"><canvas id="ch-tip"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="ana-section">
+    <div class="ana-section-head">
+      <h3>Svi intervjui</h3>
+      <div class="ana-actions">
+        <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn-danger" onclick="deleteAll()">🗑 Obriši sve</button>
+      </div>
+    </div>
+    <div id="table-container"></div>
+  </div>
+
+</div>
+</div><!-- /tab-analitika -->
+
+<!-- ── BOTTOM BAR (forma only) ── -->
+<div id="bottombar">
+  <div class="completion">Popunjeno: <span id="pct">0%</span></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn-secondary" onclick="clearForm()">🗑 Resetiraj formu</button>
+    <button class="btn-primary" onclick="openModal()">📋 Generiraj sažetak</button>
+    <button class="btn-primary green" id="btn-save" onclick="saveInterview()">💾 Spremi intervju</button>
+  </div>
+</div>
+
+<!-- ── SUMMARY MODAL ── -->
+<div id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div id="modal">
+    <div id="modal-head">
+      <h2>Sažetak intervjua</h2>
+      <button id="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"><textarea id="output-text" readonly></textarea></div>
+    <div id="modal-foot">
+      <button class="btn-dl" onclick="downloadTxt()">⬇ Preuzmi .txt</button>
+      <button class="btn-copy" id="btn-copy" onclick="copyOutput()">📋 Kopiraj sve</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════
+const SK = 'vi_data_v1';
+function loadAll()    { try { return JSON.parse(localStorage.getItem(SK)) || []; } catch { return []; } }
+function saveAll(arr) { localStorage.setItem(SK, JSON.stringify(arr)); }
+
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'err' ? '#DC2626' : '#059669';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════════════
+// SCORE BUTTONS INIT
+// ═══════════════════════════════════════════════════
+function makeScoreBtns(containerId, hiddenId, max) {
+  const c = document.getElementById(containerId);
+  for (let i = 1; i <= max; i++) {
+    const b = document.createElement('button');
+    b.className = 'score-btn'; b.textContent = i;
+    b.addEventListener('click', () => {
+      c.querySelectorAll('.score-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      document.getElementById(hiddenId).value = i;
+      updateCompletion();
+    });
+    c.appendChild(b);
+  }
+}
+makeScoreBtns('score-zadov',     'zadovoljstvo', 10);
+makeScoreBtns('score-korisnost', 'korisnost',     5);
+makeScoreBtns('score-kvaliteta', 'kvaliteta',     5);
+
+// ═══════════════════════════════════════════════════
+// PILL BUTTONS
+// ═══════════════════════════════════════════════════
+function togglePill(btn, hiddenId) {
+  btn.closest('.pill-buttons').querySelectorAll('.pill-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(hiddenId).value = btn.textContent.trim();
+  updateCompletion();
+}
+
+// ═══════════════════════════════════════════════════
+// SECTION TOGGLE
+// ═══════════════════════════════════════════════════
+function toggleSec(head) {
+  head.nextElementSibling.classList.toggle('hidden');
+  head.classList.toggle('collapsed');
+}
+
+// ═══════════════════════════════════════════════════
+// PROGRESS DOTS
+// ═══════════════════════════════════════════════════
+const SECS = ['0','1','2','3','4','5','6'];
+const dotsEl = document.getElementById('dots');
+SECS.forEach(s => {
+  const d = document.createElement('div');
+  d.className = 'dot'; d.title = `Sekcija ${s}`;
+  d.onclick = () => document.querySelector(`[data-sec="${s}"]`)?.scrollIntoView({behavior:'smooth'});
+  dotsEl.appendChild(d);
+});
+
+const KEY_FIELDS = [
+  'meta-interviewer','meta-tvrtka','privola',
+  's1_q1','s1_q2','s1_q3','s1_q4',
+  's2_q1','s2_q2','s2_q4','s2_q5','s2_q6',
+  's3_q1','s3_q2','s3_q3','s3_q6','s3_q7','zadovoljstvo',
+  's4_q1','s4_q2','s4_q3','s4_q5',
+  's5_q1','s5_q3','korisnost','superhuman','wtp',
+  's6_q1','beta','napomene'
+];
+
+function updateCompletion() {
+  const filled = KEY_FIELDS.filter(id => { const el=document.getElementById(id); return el&&el.value.trim(); }).length;
+  document.getElementById('pct').textContent = Math.round(filled/KEY_FIELDS.length*100)+'%';
+  dotsEl.querySelectorAll('.dot').forEach((d,i) => {
+    const card = document.querySelector(`[data-sec="${SECS[i]}"]`);
+    if (!card) return;
+    const has = Array.from(card.querySelectorAll('textarea,input[type=hidden]')).some(el=>el.value.trim());
+    d.classList.toggle('done', has); d.classList.toggle('active', !has);
+  });
+}
+document.addEventListener('input', updateCompletion);
+updateCompletion();
+
+// ═══════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════
+function switchTab(tab) {
+  document.getElementById('tab-forma').style.display      = tab==='forma'     ? '' : 'none';
+  document.getElementById('tab-analitika').style.display  = tab==='analitika' ? '' : 'none';
+  document.getElementById('bottombar').style.display      = tab==='forma'     ? '' : 'none';
+  document.getElementById('topbar-meta').style.display    = tab==='forma'     ? '' : 'none';
+  document.getElementById('dots').style.display           = tab==='forma'     ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  if (tab==='analitika') renderAnalytics();
+}
+
+// ═══════════════════════════════════════════════════
+// SAVE INTERVIEW
+// ═══════════════════════════════════════════════════
+function getVal(id) { return (document.getElementById(id)||{}).value || ''; }
+
+function saveInterview() {
+  const interviewer = getVal('meta-interviewer').trim();
+  const tvrtka      = getVal('meta-tvrtka').trim();
+  if (!interviewer && !tvrtka) {
+    showToast('Upiši barem interviewera ili tvrtku.', 'err'); return;
+  }
+  const interview = {
+    id: Date.now(),
+    savedAt: new Date().toISOString(),
+    datum:        getVal('meta-datum'),
+    interviewer:  interviewer,
+    tvrtka:       tvrtka,
+    tip:          getVal('meta-tip'),
+    pozicija:     getVal('pozicija'),
+    trajanje:     getVal('trajanje'),
+    privola:      getVal('privola'),
+    zadovoljstvo: getVal('zadovoljstvo'),
+    korisnost:    getVal('korisnost'),
+    superhuman:   getVal('superhuman'),
+    wtp:          getVal('wtp'),
+    beta:         getVal('beta'),
+    kvaliteta:    getVal('kvaliteta'),
+    // section data
+    s1_q1:getVal('s1_q1'), s1_q2:getVal('s1_q2'), s1_q3:getVal('s1_q3'),
+    s1_q4:getVal('s1_q4'), s1_q5:getVal('s1_q5'), s1_q6:getVal('s1_q6'),
+    s2_q1:getVal('s2_q1'), s2_q2:getVal('s2_q2'), s2_q3:getVal('s2_q3'),
+    s2_q4:getVal('s2_q4'), s2_q5:getVal('s2_q5'), s2_q6:getVal('s2_q6'),
+    s2_q7:getVal('s2_q7'), s2_q8:getVal('s2_q8'), s2_q9:getVal('s2_q9'),
+    s3_q1:getVal('s3_q1'), s3_q2:getVal('s3_q2'), s3_q3:getVal('s3_q3'),
+    s3_q4:getVal('s3_q4'), s3_q5:getVal('s3_q5'), s3_q6:getVal('s3_q6'), s3_q7:getVal('s3_q7'),
+    s4_q1:getVal('s4_q1'), s4_q2:getVal('s4_q2'), s4_q3:getVal('s4_q3'),
+    s4_q4:getVal('s4_q4'), s4_q5:getVal('s4_q5'), s4_q6:getVal('s4_q6'),
+    s5_q1:getVal('s5_q1'), s5_q2:getVal('s5_q2'), s5_q3:getVal('s5_q3'), s5_q4:getVal('s5_q4'),
+    s6_q1:getVal('s6_q1'), s6_q2:getVal('s6_q2'),
+    kk_q1:getVal('kk_q1'), kk_q2:getVal('kk_q2'), kk_q3:getVal('kk_q3'),
+    kk_q4:getVal('kk_q4'), kk_q5:getVal('kk_q5'), kk_q6:getVal('kk_q6'),
+    napomene: getVal('napomene'),
+  };
+  const data = loadAll();
+  data.push(interview);
+  saveAll(data);
+  updateTabCount();
+  showToast(`✓ Intervju "${tvrtka || interviewer}" spremljen!`);
+}
+
+function updateTabCount() {
+  document.getElementById('tab-count').textContent = loadAll().length;
+}
+updateTabCount();
+
+// ═══════════════════════════════════════════════════
+// CLEAR FORM
+// ═══════════════════════════════════════════════════
+function clearForm() {
+  if (!confirm('Resetirati sve podatke u formi?')) return;
+  document.querySelectorAll('#tab-forma textarea').forEach(el => el.value = '');
+  document.querySelectorAll('#tab-forma input[type=hidden]').forEach(el => el.value = '');
+  document.querySelectorAll('#tab-forma .score-btn.selected, #tab-forma .pill-btn.selected')
+    .forEach(el => el.classList.remove('selected'));
+  ['meta-interviewer','meta-tvrtka','meta-datum'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('meta-tip').value = '';
+  updateCompletion();
+}
+
+// ═══════════════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════════════
+function deleteOne(id) {
+  if (!confirm('Obrisati ovaj intervju?')) return;
+  saveAll(loadAll().filter(i => i.id !== id));
+  updateTabCount();
+  renderAnalytics();
+  showToast('Intervju obrisan.', 'err');
+}
+
+function deleteAll() {
+  if (!confirm('Obrisati SVE intervjue? Ova akcija se ne može poništiti.')) return;
+  saveAll([]);
+  updateTabCount();
+  renderAnalytics();
+  showToast('Svi intervjui obrisani.', 'err');
+}
+
+// ═══════════════════════════════════════════════════
+// ANALYTICS RENDER
+// ═══════════════════════════════════════════════════
+const CI = {};
+
+function mkChart(id, config) {
+  if (CI[id]) CI[id].destroy();
+  CI[id] = new Chart(document.getElementById(id).getContext('2d'), config);
+}
+
+function getFiltered() {
+  let data = loadAll();
+  const fi = document.getElementById('fil-interviewer').value;
+  const ft = document.getElementById('fil-tip').value;
+  const fw = document.getElementById('fil-wtp').value;
+  if (fi) data = data.filter(d => d.interviewer === fi);
+  if (ft) data = data.filter(d => d.tip === ft);
+  if (fw) data = data.filter(d => d.wtp === fw);
+  return data;
+}
+
+function renderAnalytics() {
+  const all  = loadAll();
+  const data = getFiltered();
+
+  // populate interviewer filter
+  const sel = document.getElementById('fil-interviewer');
+  const cur = sel.value;
+  const agents = [...new Set(all.map(d=>d.interviewer).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Svi intervieweri</option>' +
+    agents.map(a => `<option${a===cur?' selected':''}>${a}</option>`).join('');
+
+  const n = data.length;
+  document.getElementById('kpi-total').textContent = n;
+
+  // avg zadovoljstvo
+  const zVals = data.map(d=>parseInt(d.zadovoljstvo)).filter(v=>v>0);
+  document.getElementById('kpi-zad').textContent = zVals.length ? (zVals.reduce((a,b)=>a+b,0)/zVals.length).toFixed(1)+'/10' : '—';
+
+  // avg korisnost
+  const kVals = data.map(d=>parseInt(d.korisnost)).filter(v=>v>0);
+  document.getElementById('kpi-kor').textContent = kVals.length ? (kVals.reduce((a,b)=>a+b,0)/kVals.length).toFixed(1)+'/5' : '—';
+
+  // WTP Da %
+  const wtpDa = data.filter(d=>d.wtp==='Da').length;
+  document.getElementById('kpi-wtp').textContent = n ? Math.round(wtpDa/n*100)+'%' : '—';
+
+  // Superhuman %
+  const supJR = data.filter(d=>d.superhuman==='Jako razočaran').length;
+  document.getElementById('kpi-super').textContent = n ? Math.round(supJR/n*100)+'%' : '—';
+
+  // Beta
+  document.getElementById('kpi-beta').textContent = data.filter(d=>d.beta==='Da').length || '—';
+
+  const NAVY='#1F4E79', BLUE='#2E75B6', GREEN='#059669', YELLOW='#D97706', RED='#DC2626', PURPLE='#7030A0', GRAY='#9CA3AF';
+
+  // ── Chart: Zadovoljstvo (bar 1-10)
+  const zadDist = Array(10).fill(0);
+  data.forEach(d=>{const v=parseInt(d.zadovoljstvo);if(v>=1&&v<=10)zadDist[v-1]++;});
+  mkChart('ch-zadov',{type:'bar',data:{labels:['1','2','3','4','5','6','7','8','9','10'],
+    datasets:[{data:zadDist,backgroundColor:zadDist.map((_,i)=>i<4?RED:i<6?YELLOW:GREEN),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}}});
+
+  // ── Chart: Korisnost (bar 1-5)
+  const korDist = Array(5).fill(0);
+  data.forEach(d=>{const v=parseInt(d.korisnost);if(v>=1&&v<=5)korDist[v-1]++;});
+  mkChart('ch-kor',{type:'bar',data:{labels:['1','2','3','4','5'],
+    datasets:[{data:korDist,backgroundColor:[RED,RED,YELLOW,GREEN,GREEN],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}}});
+
+  // ── Chart: Superhuman (doughnut)
+  const supVals = ['Jako razočaran','Donekle razočaran','Nije razočaran'];
+  mkChart('ch-super',{type:'doughnut',data:{labels:supVals,
+    datasets:[{data:supVals.map(v=>data.filter(d=>d.superhuman===v).length),
+      backgroundColor:[GREEN,YELLOW,RED],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}});
+
+  // ── Chart: WTP (doughnut)
+  const wtpVals = ['Da','Možda','Ne'];
+  mkChart('ch-wtp',{type:'doughnut',data:{labels:wtpVals,
+    datasets:[{data:wtpVals.map(v=>data.filter(d=>d.wtp===v).length),
+      backgroundColor:[GREEN,YELLOW,RED],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}});
+
+  // ── Chart: Beta (doughnut)
+  const betaVals = ['Da','Ne'];
+  mkChart('ch-beta',{type:'doughnut',data:{labels:betaVals,
+    datasets:[{data:betaVals.map(v=>data.filter(d=>d.beta===v).length),
+      backgroundColor:[GREEN,GRAY],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}});
+
+  // ── Chart: By agent (horizontal bar)
+  const agentMap = {};
+  data.forEach(d=>{const a=d.interviewer||'Nepoznato';agentMap[a]=(agentMap[a]||0)+1;});
+  const agentLabels = Object.keys(agentMap).sort((a,b)=>agentMap[b]-agentMap[a]);
+  mkChart('ch-agent',{type:'bar',
+    data:{labels:agentLabels,datasets:[{data:agentLabels.map(a=>agentMap[a]),
+      backgroundColor:BLUE,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{grid:{display:false}}}}});
+
+  // ── Chart: By tip (doughnut)
+  const tipVals = ['Mikro','Mali','KS','Mobile','Knjigovođa','Enterprise'];
+  mkChart('ch-tip',{type:'doughnut',data:{labels:tipVals,
+    datasets:[{data:tipVals.map(v=>data.filter(d=>d.tip===v).length),
+      backgroundColor:[NAVY,BLUE,PURPLE],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}});
+
+  // ── Table
+  renderTable(data);
+}
+
+// ═══════════════════════════════════════════════════
+// TABLE
+// ═══════════════════════════════════════════════════
+function badge(val) {
+  if (!val) return '<span class="badge badge-gray">—</span>';
+  const cls = (val==='Da'||val==='Jako razočaran') ? 'badge-green'
+            : (val==='Možda'||val==='Donekle razočaran') ? 'badge-yellow'
+            : (val==='Ne'||val==='Nije razočaran') ? 'badge-red' : 'badge-gray';
+  const short = {'Jako razočaran':'Jako raz.','Donekle razočaran':'Donekle','Nije razočaran':'Nije raz.'};
+  return `<span class="badge ${cls}">${short[val]||val}</span>`;
+}
+
+function renderTable(data) {
+  const wrap = document.getElementById('table-container');
+  if (!data.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="icon">📋</div>
+      <p>Nema spremljenih intervjua.<br>Popuni formu i klikni <strong>💾 Spremi intervju</strong>.</p></div>`;
+    return;
+  }
+  const rows = data.slice().reverse().map(d => `
+    <tr>
+      <td>${d.datum||'—'}</td>
+      <td title="${d.interviewer||''}">${d.interviewer||'—'}</td>
+      <td title="${d.tvrtka||''}">${d.tvrtka||'—'}</td>
+      <td>${badge(d.tip||'')}</td>
+      <td style="text-align:center;font-weight:700">${d.zadovoljstvo||'—'}</td>
+      <td style="text-align:center;font-weight:700">${d.korisnost||'—'}</td>
+      <td>${badge(d.superhuman)}</td>
+      <td>${badge(d.wtp)}</td>
+      <td>${badge(d.beta)}</td>
+      <td title="${d.napomene||''}">${(d.napomene||'').substring(0,40)+(d.napomene&&d.napomene.length>40?'…':'')}</td>
+      <td><button class="btn-del-row" onclick="deleteOne(${d.id})" title="Obriši">🗑</button></td>
+    </tr>`).join('');
+
+  wrap.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Datum</th><th>Interviewer</th><th>Tvrtka</th><th>Tip</th>
+      <th>Zad.</th><th>Kor.</th><th>Superhuman</th><th>WTP</th><th>Beta</th>
+      <th>Napomene</th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════════
+function exportCSV() {
+  const data = getFiltered();
+  if (!data.length) { showToast('Nema podataka za export.','err'); return; }
+  const cols = ['datum','interviewer','tvrtka','tip','pozicija','trajanje',
+    'zadovoljstvo','korisnost','superhuman','wtp','beta','kvaliteta',
+    's1_q1','s1_q2','s1_q3','s1_q4','s1_q5','s1_q6',
+    's2_q1','s2_q2','s2_q3','s2_q4','s2_q5','s2_q6','s2_q7','s2_q8','s2_q9',
+    's3_q1','s3_q2','s3_q3','s3_q4','s3_q5','s3_q6','s3_q7',
+    's4_q1','s4_q2','s4_q3','s4_q4','s4_q5','s4_q6',
+    's5_q1','s5_q2','s5_q3','s5_q4',
+    's6_q1','s6_q2','napomene'];
+  const esc = v => `"${(v||'').replace(/"/g,'""')}"`;
+  const csv = [cols.join(','), ...data.map(d => cols.map(c => esc(d[c]||'')).join(','))].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `intervjui_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('CSV exportiran!');
+}
+
+// ═══════════════════════════════════════════════════
+// SUMMARY MODAL
+// ═══════════════════════════════════════════════════
+function v(id) { return (getVal(id)||'').trim()||'—'; }
+
+function openModal() {
+  const lines = [
+    '═══════════════════════════════════════════════════════════════',
+    '  VALIDACIJSKI INTERVJU — SAŽETAK',
+    '═══════════════════════════════════════════════════════════════','',
+    `Datum:          ${v('meta-datum')}`,
+    `Interviewer:    ${v('meta-interviewer')}`,
+    `Tvrtka:         ${v('meta-tvrtka')}`,
+    `Tip korisnika:  ${v('meta-tip')}`,
+    `Pozicija:       ${v('pozicija')}`,
+    `Trajanje:       ${v('trajanje')} min`,
+    `Privola:        ${v('privola')}`,
+    '','───────────────────────────────────────────────────────────────',
+    '  1. KONTEKST KORISNIKA','───────────────────────────────────────────────────────────────',
+    `Industrija:         ${v('s1_q1')}`,
+    `Računi mj.:         ${v('s1_q2')}`,
+    `Br. zaposlenika:    ${v('s1_q3')}`,
+    `Trenutni alat:      ${v('s1_q4')}`,
+    `Decision maker:     ${v('s1_q5')}`,
+    `Trošak godišnje:    ${v('s1_q6')}`,
+    '','───────────────────────────────────────────────────────────────',
+    '  2. TRENUTNI WORKFLOW','───────────────────────────────────────────────────────────────',
+    `Kako izdaje:        ${v('s2_q1')}`,
+    `Praćenje naplate:   ${v('s2_q2')}`,
+    `Što pada kroz rupe: ${v('s2_q3')}`,
+    `Zaprimanje rac.:    ${v('s2_q4')}`,
+    `Čuvanje rac.:       ${v('s2_q5')}`,
+    `Praćanje plaćanja:  ${v('s2_q6')}`,
+    `Sustav:             ${v('s2_q7')}`,
+    `Komunikacija kg.:   ${v('s2_q8')}`,
+    `Šalje kg.:          ${v('s2_q9')}`,
+    '','───────────────────────────────────────────────────────────────',
+    '  3. PROBLEMI I FRUSTRACIJE','───────────────────────────────────────────────────────────────',
+    `Najkompliciranije:  ${v('s3_q1')}`,
+    `Gubi najviše vrm.:  ${v('s3_q2')}`,
+    `Želi automatizirati:${v('s3_q3')}`,
+    `Najnejasnije:       ${v('s3_q4')}`,
+    `Gdje griješi:       ${v('s3_q5')}`,
+    `Pokušali riješiti:  ${v('s3_q6')}`,
+    `Značenje rješenja:  ${v('s3_q7')}`,
+    `★ Zadovoljstvo:     ${v('zadovoljstvo')} / 10`,
+    '','───────────────────────────────────────────────────────────────',
+    '  4. TEST KONCEPTA','───────────────────────────────────────────────────────────────',
+    `Reakcija:           ${v('s4_q1')}`,
+    `Što ima smisla:     ${v('s4_q2')}`,
+    `Što nedostaje:      ${v('s4_q3')}`,
+    `Što nepotrebno:     ${v('s4_q4')}`,
+    `Konk. problem:      ${v('s4_q5')}`,
+    `Vrijednost:         ${v('s4_q6')}`,
+    '','───────────────────────────────────────────────────────────────',
+    '  5. VALUE & WILLINGNESS','───────────────────────────────────────────────────────────────',
+    `Ušteda sati:        ${v('s5_q1')}`,
+    `Bi li koristio:     ${v('s5_q2')}`,
+    `Spreman platiti:    ${v('s5_q3')}`,
+    `Okvirna cijena:     ${v('s5_q4')}`,
+    `★ Korisnost:        ${v('korisnost')} / 5`,
+    `★ Superhuman:       ${v('superhuman')}`,
+    `★ WTP:              ${v('wtp')}`,
+    '','───────────────────────────────────────────────────────────────',
+    '  6. CLOSING','───────────────────────────────────────────────────────────────',
+    `Referral (opis):    ${v('s6_q1')}`,
+    `Referral (kontakt): ${v('s6_q2')}`,
+    `★ Beta lista:       ${v('beta')}`,
+    '','───────────────────────────────────────────────────────────────',
+    '  OPĆE NAPOMENE','───────────────────────────────────────────────────────────────',
+    v('napomene'),
+    `★ Ocjena intervjua: ${v('kvaliteta')} / 5`,
+    '','═══════════════════════════════════════════════════════════════',
+  ];
+  document.getElementById('output-text').value = lines.join('\n');
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('btn-copy').textContent = '📋 Kopiraj sve';
+  document.getElementById('btn-copy').classList.remove('copied');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModalOnOverlay(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+function copyOutput() {
+  navigator.clipboard.writeText(document.getElementById('output-text').value).then(()=>{
+    const b = document.getElementById('btn-copy');
+    b.textContent='✓ Kopirano!'; b.classList.add('copied');
+    setTimeout(()=>{b.textContent='📋 Kopiraj sve';b.classList.remove('copied');},2500);
+  });
+}
+function downloadTxt() {
+  const tvrtka = (getVal('meta-tvrtka')||'intervju').replace(/\s+/g,'_');
+  const datum  = getVal('meta-datum')||new Date().toISOString().slice(0,10);
+  const blob = new Blob([document.getElementById('output-text').value],{type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`INT_${datum}_${tvrtka}.txt`; a.click();
+}
+</script>
+</body>
+</html>
